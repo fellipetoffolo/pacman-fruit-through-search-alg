@@ -1,0 +1,9 @@
+ponto_inicial(a0).
+ponto_final(f0).
+pode_ir(a0,b0,12).
+pode_ir(a0,c0,20).
+pode_ir(b0,c0,10).
+pode_ir(b0,d0,30).
+pode_ir(b0,e0,5).
+pode_ir(c0,f0,3).
+pode_ir(e0,f0,8). 
