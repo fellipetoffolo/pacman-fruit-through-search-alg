@@ -1,7 +1,7 @@
 import re
-from collections import deque #bfs e bidirecional
+from collections import deque #bfs 
 import heapq #ucs
-
+import time
 
 class Graph:
     def __init__(self):
@@ -25,6 +25,12 @@ class Graph:
 
     def get_neighbors(self, node):
         return self.edges.get(node, [])
+    
+    def clear(self):
+        self.edges.clear()
+        self.heuristic.clear()
+        self.start = None
+        self.end = None
 
 def format_graph(graph):
     formated_graph = "grafo formatado: \n"
@@ -33,10 +39,13 @@ def format_graph(graph):
             for vertex in dest:
                 formated_graph = formated_graph + src + "->" + vertex[0] + "\n"
 
-    formated_graph = formated_graph + "Valores da heurística: \n"
+    formated_graph = formated_graph + "\nValores da heurística: \n"
 
     for state, value in graph.heuristic.items():
-        formated_graph = formated_graph + state + ", " + str(value) + "\n"
+        formated_graph = formated_graph + state + ": " + str(value) + "\n"
+
+    
+
     return formated_graph
 
 def read_graph_from_file(filename, graph):
@@ -44,6 +53,8 @@ def read_graph_from_file(filename, graph):
     try:
         with open(filename, 'r') as file:  # Abre o arquivo em modo de leitura
             content = file.read()  # Lê todo o conteúdo do arquivo
+
+        graph.clear()
 
         # Regex para extrair pontos inicial e final
         ponto_inicial = re.search(r"ponto_inicial\s*\(\s*(\w+)\s*\)\s*\.?", content)
@@ -64,17 +75,25 @@ def read_graph_from_file(filename, graph):
         for src, dest, weight in edges:
             graph.add_edge(src, dest, weight)
 
-        heuristics_dict = {state : int(value) for state, value in heuristics}
+        if heuristics != []:
+            heuristics_dict = {state: int(value) for state, value in heuristics}
+        else:
+            # Se heurísticas não estão presentes, inicializar como zero para cada estado encontrado nas transições
+            states = set([from_node for from_node, _, _ in transitions] + [to_node for _, to_node, _ in transitions])
+            heuristics_dict = {state: 0 for state in states}  # Valor 0 para cada estado
 
         for state, value in heuristics_dict.items():
             graph.add_heuristic(state, value)
 
+        return 1
+    
     except FileNotFoundError:
-        print("O arquivo especificado não foi encontrado.")
-        return None, None
+        print("O arquivo especificado não foi encontrado.\n")
+        return 0
     except Exception as e:
         print(f"Ocorreu um erro: {e}")
-        return None, None
+        return 0
+
 
 ########################################################################
 # Funções de medida de desemepenho
@@ -88,7 +107,7 @@ def desempenhoNos(visited_nodes_count):
     :return: O contador de nós visitados atualizado.
     """
     visited_nodes_count += 1
-    print(f"Nós visitados: {visited_nodes_count}")
+    print(f"        Nós visitados: {visited_nodes_count}")
     return visited_nodes_count
 
 def desempenhoFronteira(frontier, max_frontier_size):
@@ -102,8 +121,8 @@ def desempenhoFronteira(frontier, max_frontier_size):
     current_frontier_size = len(frontier)
     if current_frontier_size > max_frontier_size:
         max_frontier_size = current_frontier_size
-    print(f"Tamanho atual da fronteira: {current_frontier_size}")
-    print(f"Tamanho máximo da fronteira observado: {max_frontier_size}")
+    print(f"        Tamanho atual da fronteira: {current_frontier_size}")
+    print(f"        Tamanho máximo da fronteira observado: {max_frontier_size}")
     
     return max_frontier_size
 
@@ -136,7 +155,7 @@ def greedy_search(graph, heuristic):
     iteration = 1
     # Enquanto houver nós na fronteira para explorar
     while frontier:
-        print(f"\nIteração {iteration}")
+        print(f"\n      Iteração {iteration}")
         iteration += 1
         # Atualiza o desempenho da fronteira
         max_frontier_size = desempenhoFronteira(frontier, max_frontier_size)
@@ -158,8 +177,8 @@ def greedy_search(graph, heuristic):
                 current_node = came_from[current_node]
 
             #Reporta os valores de desempenho finais
-            print(f"\n\nTotal de nós visitados: {visited_nodes_count}")
-            print(f"Tamanho máximo da fronteira: {max_frontier_size}")
+            print(f"\n\n  Total de nós visitados: {visited_nodes_count}")
+            print(f"  Tamanho máximo da fronteira: {max_frontier_size}")
             return path[::-1]  # Retorna o caminho do início ao objetivo
         
         # Explora os vizinhos do nó atual
@@ -170,8 +189,8 @@ def greedy_search(graph, heuristic):
 
 
     # Reporta os valores de desempenho finais se nenhum caminho for encontrado
-    print(f"Total de nós visitados: {visited_nodes_count}")
-    print(f"Tamanho máximo da fronteira: {max_frontier_size}")
+    print(f"  Total de nós visitados: {visited_nodes_count}")
+    print(f"  Tamanho máximo da fronteira: {max_frontier_size}")
     
     # Se o loop termina e não encontramos o objetivo
     return None  # Retorna None se nenhum caminho for encontrado
@@ -199,7 +218,7 @@ def breadth_first_search(graph):
     iteration = 1
     # Enquanto houver nós na fronteira para explorar
     while frontier:
-        print(f"\nIteração {iteration}")
+        print(f"\n      Iteração {iteration}")
         iteration += 1
         # Atualiza o desempenho da fronteira
         max_frontier_size = desempenhoFronteira(frontier, max_frontier_size)
@@ -218,8 +237,8 @@ def breadth_first_search(graph):
                 current_node = came_from[current_node]
             
             # Reporta os valores de desempenho finais
-            print(f"\n\nTotal de nós visitados: {visited_nodes_count}")
-            print(f"Tamanho máximo da fronteira: {max_frontier_size}")
+            print(f"\n\n  Total de nós visitados: {visited_nodes_count}")
+            print(f"  Tamanho máximo da fronteira: {max_frontier_size}")
             
             return path[::-1]  # Retorna o caminho do início ao objetivo
         
@@ -230,8 +249,8 @@ def breadth_first_search(graph):
                 came_from[neighbor] = current_node  # Rastreia de onde viemos
     
     # Reporta os valores de desempenho finais se nenhum caminho for encontrado
-    print(f"Total de nós visitados: {visited_nodes_count}")
-    print(f"Tamanho máximo da fronteira: {max_frontier_size}")
+    print(f"  Total de nós visitados: {visited_nodes_count}")
+    print(f"  Tamanho máximo da fronteira: {max_frontier_size}")
 
     # Se o loop termina e não encontramos o objetivo
     return None  # Retorna None se nenhum caminho for encontrado
@@ -263,7 +282,7 @@ def uniform_cost_search(graph):
     iteration = 1
     # Enquanto houver nós na fronteira para explorar
     while frontier:
-        print(f"\nIteração {iteration}")
+        print(f"\n      Iteração {iteration}")
         iteration += 1
         # Atualiza o desempenho da fronteira
         max_frontier_size = desempenhoFronteira(frontier, max_frontier_size)
@@ -282,8 +301,8 @@ def uniform_cost_search(graph):
                 current_node = came_from[current_node]
             
             # Reporta os valores de desempenho finais
-            print(f"\n\nTotal de nós visitados: {visited_nodes_count}")
-            print(f"Tamanho máximo da fronteira: {max_frontier_size}")
+            print(f"\n\n  Total de nós visitados: {visited_nodes_count}")
+            print(f"  Tamanho máximo da fronteira: {max_frontier_size}")
             
             return path[::-1]  # Retorna o caminho do início ao objetivo
         
@@ -296,8 +315,8 @@ def uniform_cost_search(graph):
                 came_from[neighbor] = current_node  # Rastreia de onde viemos
     
     # Reporta os valores de desempenho finais se nenhum caminho for encontrado
-    print(f"Total de nós visitados: {visited_nodes_count}")
-    print(f"Tamanho máximo da fronteira: {max_frontier_size}")
+    print(f"  Total de nós visitados: {visited_nodes_count}")
+    print(f"  Tamanho máximo da fronteira: {max_frontier_size}")
 
     # Se o loop termina e não encontramos o objetivo
     return None  # Retorna None se nenhum caminho for encontrado
@@ -321,8 +340,8 @@ def iterative_deepening_search(graph):
         # Se o objetivo for encontrado, retorna o caminho
         if result is not None:
             # Reporta os valores de desempenho finais
-            print(f"Total de nós visitados: {visited_nodes_count}")
-            print(f"Tamanho máximo da fronteira: {max_frontier_size}")
+            print(f"  Total de nós visitados: {visited_nodes_count}")
+            print(f"  Tamanho máximo da fronteira: {max_frontier_size}")
             return result
         
         # Incrementa a profundidade para a próxima iteração
@@ -404,7 +423,7 @@ def depth_first_search_no_backtracking(graph):
     # Enquanto houver estados a serem explorados
     while True:
         # Atualiza o desempenho da fronteira
-        print(f"\nIteração {iteration}")
+        print(f"\n      Iteração {iteration}")
         iteration += 1
         max_frontier_size = desempenhoFronteira(path, max_frontier_size)
         
@@ -414,8 +433,8 @@ def depth_first_search_no_backtracking(graph):
         # Se o nó atual é o objetivo, retorna o caminho
         if current_node == goal:
             # Reporta os valores de desempenho finais
-            print(f"\n\nTotal de nós visitados: {visited_nodes_count}")
-            print(f"Tamanho máximo da fronteira: {max_frontier_size}")
+            print(f"\n\n  Total de nós visitados: {visited_nodes_count}")
+            print(f"  Tamanho máximo da fronteira: {max_frontier_size}")
             return path
         
         # Obtém os vizinhos do nó atual
@@ -434,8 +453,8 @@ def depth_first_search_no_backtracking(graph):
             print("Nenhuma solução encontrada a partir do estado atual.")
             
             # Reporta os valores de desempenho finais
-            print(f"Total de nós visitados: {visited_nodes_count}")
-            print(f"Tamanho máximo da fronteira: {max_frontier_size}")
+            print(f"  Total de nós visitados: {visited_nodes_count}")
+            print(f"  Tamanho máximo da fronteira: {max_frontier_size}")
             
             return None
 
@@ -453,10 +472,15 @@ def depth_first_search_with_backtracking(graph):
     # Inicializa o contador de nós visitados e o tamanho máximo da fronteira
     visited_nodes_count = 0
     max_frontier_size = 0
+    iteration = 1  # Contador de iterações
 
     # Função auxiliar recursiva para realizar a busca
     def dfs_recursive(current_node, goal, path, visited):
-        nonlocal visited_nodes_count, max_frontier_size
+        nonlocal visited_nodes_count, max_frontier_size, iteration
+        
+        # Imprime a iteração atual
+        print(f"\n      Iteração {iteration}")
+        iteration += 1
         
         # Atualiza o desempenho da fronteira
         max_frontier_size = desempenhoFronteira(path, max_frontier_size)
@@ -471,8 +495,8 @@ def depth_first_search_with_backtracking(graph):
         # Se o nó atual é o objetivo, retorna o caminho
         if current_node == goal:
             # Reporta os valores de desempenho finais
-            print(f"\n\nTotal de nós visitados: {visited_nodes_count}")
-            print(f"Tamanho máximo da fronteira: {max_frontier_size}")
+            print(f"\n\n  Total de nós visitados: {visited_nodes_count}")
+            print(f"  Tamanho máximo da fronteira: {max_frontier_size}")
             return path
         
         # Explora os vizinhos do nó atual
@@ -495,8 +519,8 @@ def depth_first_search_with_backtracking(graph):
     
     # Se não encontrou solução, ainda reporta os valores de desempenho finais
     if result is None:
-        print(f"Total de nós visitados: {visited_nodes_count}")
-        print(f"Tamanho máximo da fronteira: {max_frontier_size}")
+        print(f"  Total de nós visitados: {visited_nodes_count}")
+        print(f"  Tamanho máximo da fronteira: {max_frontier_size}")
     
     return result
 
@@ -531,7 +555,7 @@ def a_star_search(graph, heuristic):
     # Enquanto houver nós na fronteira para explorar
     while frontier:
 
-        print(f"\nIteração {iteration}")
+        print(f"\n      Iteração {iteration}")
         iteration += 1
 
         # Remove o nó com o menor custo total estimado (f = g + h)
@@ -552,8 +576,8 @@ def a_star_search(graph, heuristic):
                 current_node = came_from[current_node]
             
             # Reporta os valores de desempenho finais
-            print(f"\n\nTotal de nós visitados: {visited_nodes_count}")
-            print(f"Tamanho máximo da fronteira: {max_frontier_size}")
+            print(f"\n\n  Total de nós visitados: {visited_nodes_count}")
+            print(f"  Tamanho máximo da fronteira: {max_frontier_size}")
             
             return path[::-1]  # Retorna o caminho do início ao objetivo
         
@@ -575,8 +599,8 @@ def a_star_search(graph, heuristic):
                 came_from[neighbor] = current_node
     
     # Reporta os valores de desempenho finais se nenhum caminho for encontrado
-    print(f"Total de nós visitados: {visited_nodes_count}")
-    print(f"Tamanho máximo da fronteira: {max_frontier_size}")
+    print(f"  Total de nós visitados: {visited_nodes_count}")
+    print(f"  Tamanho máximo da fronteira: {max_frontier_size}")
 
     # Se o loop termina e não encontramos o objetivo
     return None  # Retorna None se nenhum caminho for encontrado
@@ -625,7 +649,7 @@ def sma_star(graph, heuristic, memory_limit):
     iteration = 1
 
     while frontier:
-        print(f"\nIteração {iteration}")
+        print(f"\n      Iteração {iteration}")
         iteration += 1
         
         # Ordena a fronteira para garantir que o nó com menor f seja processado primeiro
@@ -643,8 +667,8 @@ def sma_star(graph, heuristic, memory_limit):
         # Se o objetivo for encontrado, reconstrua o caminho e retorne
         if current_node.state == goal:
             # Reporta os valores de desempenho finais
-            print(f"\n\nTotal de nós visitados: {visited_nodes_count}")
-            print(f"Tamanho máximo da fronteira: {max_frontier_size}")
+            print(f"\n\n  Total de nós visitados: {visited_nodes_count}")
+            print(f"  Tamanho máximo da fronteira: {max_frontier_size}")
             
             return reconstruct_path(current_node)
 
@@ -678,8 +702,8 @@ def sma_star(graph, heuristic, memory_limit):
             heapq.heapify(frontier)
 
     # Reporta os valores de desempenho finais se a busca falhar
-    print(f"Total de nós visitados: {visited_nodes_count}")
-    print(f"Tamanho máximo da fronteira: {max_frontier_size}")
+    print(f"  Total de nós visitados: {visited_nodes_count}")
+    print(f"  Tamanho máximo da fronteira: {max_frontier_size}")
 
     # Se a busca falhar, retorna None
     return None
@@ -713,7 +737,7 @@ def ida_star(graph, heuristic):
         nonlocal visited_nodes_count, max_frontier_size, iteration_count
         
         # Mostrar a iteração atual antes de qualquer atualização de desempenho
-        print(f"\nIteração {iteration_count}")
+        print(f"\n      Iteração {iteration_count}")
         
         f = g + heuristic.get(node, float('inf'))  # Calcula f(n) = g(n) + h(n)
         
@@ -748,20 +772,20 @@ def ida_star(graph, heuristic):
 
     # Loop iterativo, aumentando o limiar até encontrar a solução
     while True:
-        print(f"\nIniciando iteração com limiar {threshold}")
+        print(f"\n    Iniciando iteração com limiar {threshold}")
         iteration_count += 1  # Incrementa o contador de iterações
         t, result = search(start, 0, threshold, [])
         
         if result is not None:
             # Apenas imprime as métricas finais, já que as intermediárias foram mostradas pelas funções de desempenho
-            print(f"\nTotal de nós visitados: {visited_nodes_count}")
-            print(f"Tamanho máximo da fronteira observado: {max_frontier_size}")
+            print(f"\n\n  Total de nós visitados: {visited_nodes_count}")
+            print(f"  Tamanho máximo da fronteira observado: {max_frontier_size}")
             return result  # Caminho encontrado
         
         if t == float('inf'):
             # Apenas imprime as métricas finais, já que as intermediárias foram mostradas pelas funções de desempenho
-            print(f"Total de nós visitados: {visited_nodes_count}")
-            print(f"Tamanho máximo da fronteira observado: {max_frontier_size}")
+            print(f"  Total de nós visitados: {visited_nodes_count}")
+            print(f"  Tamanho máximo da fronteira observado: {max_frontier_size}")
             return None  # Não há solução
         
         threshold = t  # Atualiza o limiar para a próxima iteração
@@ -815,74 +839,86 @@ def iterate_through_samples():
 def main():
     graph = Graph()
 
-    fileName = input('Digite o nome do arquivo: ')
-    read_graph_from_file(fileName, graph)
+    while True:
+        fileName = input('Digite o nome do arquivo: ')
+        if read_graph_from_file(fileName, graph) != 0:
+            print("Arquivo carregado com sucesso!")
+            break
 
     #Apresenta o grafo formatado
-    print(format_graph(graph))
-    #print(format_graph(graph.edges))
+    print("\n\n" + format_graph(graph))
+    
     
     print('Qual algoritmo deseja executar?')
     while True:
-        opcao = input('''Ótimos:
-    1 - SMA* (Selecionado como melhor baseado nas medidas de desempenho)
-    2 - A*
-    3 - IDA*
-    4 - Custo uniforme
+        opcao = input('''
+    Ótimos:
+    1  - SMA* (Selecionado como melhor baseado nas medidas de desempenho)
+    2  - A*
+    3  - IDA*
+    4  - Custo uniforme
 
     Não ótimos:
-    5 - Profundidade sem backtracking (Selecionado como pior baseado nas medidas de desempenho)
-    6 - Busca em largura
-    7 - Aprofundamento interativo
-    8 - Busca gulosa
-    9 - Profundidade com backtracking
+    5  - Profundidade sem backtracking (Selecionado como pior baseado nas medidas de desempenho)
+    6  - Busca em largura
+    7  - Aprofundamento interativo
+    8  - Busca gulosa
+    9  - Profundidade com backtracking
 
-    0 - Encerrar o programa
+    10 - carregar outro arquivo
+    0  - Encerrar o programa
 
-    Digite a opção desejada (0 a 9): 
-    ''')
+    Digite a opção desejada (0 a 10):
+    >''')
 
         if opcao == '0':
             print("Encerrando o programa...")
             break
         elif opcao == '1':
-            print("\n\nBusca SMA*")
+            print("\n\n     Busca SMA*")
             path = sma_star(graph, graph.heuristic, 5)
-            print(f"Caminho encontrado: {format_path(path)}\nCusto do caminho: {path_cost(graph, path)}\n\n")
+            print(f"  Caminho encontrado: {format_path(path)}\n  Custo do caminho: {path_cost(graph, path)}\n\n")
         elif opcao == '2':
-            print("\n\nBusca A*")
+            print("\n\n Busca A*")
             path = a_star_search(graph, graph.heuristic)
-            print(f"Caminho encontrado: {format_path(path)}\nCusto do caminho: {path_cost(graph, path)}\n\n")
+            print(f"  Caminho encontrado: {format_path(path)}\n  Custo do caminho: {path_cost(graph, path)}\n\n")
         elif opcao == '3':
             print("\n\nBusca IDA*")
             path = ida_star(graph, graph.heuristic)
-            print(f"Caminho encontrado: {format_path(path)}\nCusto do caminho: {path_cost(graph, path)}\n\n")
+            print(f"  Caminho encontrado: {format_path(path)}\n  Custo do caminho: {path_cost(graph, path)}\n\n")
         elif opcao == '4':
             print("\n\nBusca de Custo Uniforme:")
             path = uniform_cost_search(graph)
-            print(f"Caminho encontrado: {format_path(path)}\nCusto do caminho: {path_cost(graph, path)}\n\n")
+            print(f"  Caminho encontrado: {format_path(path)}\n  Custo do caminho: {path_cost(graph, path)}\n\n")
         elif opcao == '5':
             print("\n\nBusca em profundidade sem backtracking")
             path = depth_first_search_no_backtracking(graph)
-            print(f"Caminho encontrado: {format_path(path)}\nCusto do caminho: {path_cost(graph, path)}\n\n")
+            print(f"  Caminho encontrado: {format_path(path)}\n  Custo do caminho: {path_cost(graph, path)}\n\n")
         elif opcao == '6':
             print("\n\nBusca em Largura:")
             path = breadth_first_search(graph)
-            print(f"Caminho encontrado: {format_path(path)}\nCusto do caminho: {path_cost(graph, path)}\n\n")
+            print(f"  Caminho encontrado: {format_path(path)}\n  Custo do caminho: {path_cost(graph, path)}\n\n")
         elif opcao == '7':
             print("\n\nBusca em Aprofundamento Iterativo:")
             path = iterative_deepening_search(graph)
-            print(f"Caminho encontrado: {format_path(path)}\nCusto do caminho: {path_cost(graph, path)}\n\n")
+            print(f"  Caminho encontrado: {format_path(path)}\n  Custo do caminho: {path_cost(graph, path)}\n\n")
         elif opcao == '8':
             print("\n\nBusca Gulosa:")
             path = greedy_search(graph, graph.heuristic)
-            print(f"Caminho encontrado: {format_path(path)}\nCusto do caminho: {path_cost(graph, path)}\n\n")
+            print(f"  Caminho encontrado: {format_path(path)}\n  Custo do caminho: {path_cost(graph, path)}\n\n")
         elif opcao == '9':
             print("\n\nBusca em profundidade com backtracking")
             path = depth_first_search_with_backtracking(graph)
-            print(f"Caminho encontrado: {format_path(path)}\nCusto do caminho: {path_cost(graph, path)}\n\n")
+            print(f"  Caminho encontrado: {format_path(path)}\n  Custo do caminho: {path_cost(graph, path)}\n\n")
+        elif opcao == '10':
+            fileName = input('Digite o nome do arquivo: ')
+            if read_graph_from_file(fileName, graph) != 0:
+                print("Arquivo carregado com sucesso!")
+            print("\n\n" + format_graph(graph))
         else:
-            print("Opção inválida! Por favor, escolha um número entre 0 e 9.")
+            print("\n    ################Opção inválida! Por favor, escolha um número entre 0 e 10.################")
+    
+        input("Pressione enter para voltar ao menu.")
 
 if __name__ == "__main__":
     main()
